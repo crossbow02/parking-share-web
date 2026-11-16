@@ -166,6 +166,7 @@
               box.appendChild(b);
             });
             $('floorBox').hidden = false;
+            showLast(); // 새 기록(층 미입력)으로 '가장 최근 주차' 카드 갱신
           }
         });
     }).catch(function (e) {
