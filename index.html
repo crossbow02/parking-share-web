@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>주차 위치</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#1a73e8">
+<style>
+  :root { --bg:#fff; --fg:#1b1b1f; --mut:#666; --card:#f3f5f9; --pri:#1a73e8; --ok:#188038; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#14161a; --fg:#eceef2; --mut:#9aa0aa; --card:#21242b; --pri:#6ea8ff; --ok:#5bd17f; }
+  }
+  * { box-sizing: border-box; }
+  body { margin:0; padding:16px; background:var(--bg); color:var(--fg);
+         font:16px/1.5 -apple-system,"Noto Sans KR",sans-serif; max-width:480px; margin:auto; }
+  h1 { font-size:20px; margin:8px 0 16px; }
+  .card { background:var(--card); border-radius:14px; padding:16px; margin-bottom:14px; }
+  .big { font-size:22px; font-weight:700; }
+  .mut { color:var(--mut); font-size:14px; }
+  .ok { color:var(--ok); font-weight:700; }
+  button, .btn { display:block; width:100%; padding:16px; margin:8px 0; border:0; border-radius:12px;
+         background:var(--pri); color:#fff; font-size:20px; font-weight:700; text-align:center; text-decoration:none; }
+  button.sec, .btn.sec { background:transparent; color:var(--pri); border:1.5px solid var(--pri); font-size:16px; padding:12px; }
+  .floors { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
+  .floors button { font-size:26px; padding:22px 0; margin:0; }
+  input { width:100%; padding:12px; margin:4px 0 10px; font-size:16px; border-radius:10px;
+          border:1px solid var(--mut); background:var(--bg); color:var(--fg); }
+  label { font-size:14px; color:var(--mut); }
+  [hidden] { display:none !important; }
+</style>
+</head>
+<body>
+<h1>🚗 주차 위치</h1>
+
+<!-- 진행 상태 -->
+<div class="card" id="run" hidden>
+  <div id="msg" class="big">위치 확인 중…</div>
+  <div id="sub" class="mut"></div>
+  <div id="floorBox" hidden>
+    <p class="mut">몇 층에 주차했나요?</p>
+    <div class="floors" id="floors"></div>
+  </div>
+  <button class="sec" id="retry" hidden>다시 시도</button>
+</div>
+
+<!-- 최근 기록 -->
+<div class="card" id="last" hidden>
+  <div class="mut">가장 최근 주차</div>
+  <div class="big" id="lastFloor"></div>
+  <div class="mut" id="lastInfo"></div>
+  <a class="btn sec" id="lastMap" target="_blank" rel="noopener">지도에서 보기</a>
+</div>
+
+<button class="sec" id="again">📍 지금 위치로 다시 기록</button>
+<button class="sec" id="toSetup">⚙ 설정</button>
+
+<!-- 설정 -->
+<div class="card" id="setup" hidden>
+  <label>Apps Script 웹 앱 URL (…/exec)</label><input id="u" inputmode="url" autocapitalize="off">
+  <label>토큰</label><input id="t" autocapitalize="off">
+  <label>내 이름 (예: 남편)</label><input id="who">
+  <label>층 목록 (쉼표 구분)</label><input id="fl">
+  <label>집 반경(m)</label><input id="rad" inputmode="numeric">
+  <button class="sec" id="setHome">현재 위치를 집으로 설정</button>
+  <div class="mut" id="homeInfo"></div>
+  <button id="save">저장</button>
+</div>
+
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var KEY = 'parkshare.v1';
+
+  function load() { try { return JSON.parse(localStorage.getItem(KEY)) || {}; } catch (e) { return {}; } }
+  function save(s) { try { localStorage.setItem(KEY, JSON.stringify(s)); } catch (e) {} }
+  var S = load();
+
+  // 링크로 설정 전달: ?u=...&t=...&who=...  (배우자 폰 설정용). 적용 후 주소창에서 제거
+  var q = new URLSearchParams(location.search);
+  if (q.get('u') || q.get('t')) {
+    ['u', 't', 'who', 'fl', 'rad'].forEach(function (k) { if (q.get(k)) S[k] = q.get(k); });
+    save(S);
+    history.replaceState(null, '', location.pathname);
+  }
+
+  function api(params) {
+    var qs = new URLSearchParams(Object.assign({ token: S.t }, params)).toString();
+    return fetch(S.u + '?' + qs, { redirect: 'follow' }).then(function (r) { return r.json(); });
+  }
+
+  function dist(a, b, c, d) { // 미터 (haversine)
+    var R = 6371000, rad = Math.PI / 180;
+    var dLat = (c - a) * rad, dLng = (d - b) * rad;
+    var x = Math.sin(dLat / 2) ** 2 + Math.cos(a * rad) * Math.cos(c * rad) * Math.sin(dLng / 2) ** 2;
+    return 2 * R * Math.asin(Math.sqrt(x));
+  }
+
+  function getPos() {
+    return new Promise(function (res, rej) {
+      if (!navigator.geolocation) return rej(new Error('이 브라우저는 위치를 지원하지 않아요'));
+      navigator.geolocation.getCurrentPosition(res, rej,
+        { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 });
+    });
+  }
+
+  function floorsList() {
+    return (S.fl || 'B2,B3,B4').split(',').map(function (x) { return x.trim(); }).filter(Boolean);
+  }
+
+  function showLast() {
+    api({ action: 'latest' }).then(function (r) {
+      var l = r && r.latest;
+      if (!l) { $('last').hidden = true; return; }
+      $('last').hidden = false;
+      $('lastFloor').textContent = l.floor || '층 미입력';
+      $('lastInfo').textContent = l.time + ' · ' + l.who;
+      $('lastMap').href = 'https://maps.google.com/?q=' + l.lat + ',' + l.lng;
+    }).catch(function () {});
+  }
+
+  // ── 메인 흐름: 위치 → 집 안/밖 판단 → 저장 (집 안이면 층 선택) ──
+  function run() {
+    $('setup').hidden = true;
+    $('run').hidden = false;
+    $('floorBox').hidden = true;
+    $('retry').hidden = true;
+    $('msg').className = 'big';
+    $('msg').textContent = '위치 확인 중…';
+    $('sub').textContent = '';
+
+    getPos().then(function (pos) {
+      var lat = pos.coords.latitude, lng = pos.coords.longitude;
+      var id = String(Date.now());
+      var hasHome = S.hlat && S.hlng;
+      var inHome = hasHome && dist(lat, lng, +S.hlat, +S.hlng) <= (+S.rad || 150);
+
+      return api({ action: 'park', id: id, who: S.who || '', lat: lat, lng: lng, mode: inHome ? 'home' : 'auto' })
+        .then(function (r) {
+          if (!r || !r.ok) throw new Error('서버 저장 실패 (URL/토큰 확인)');
+          if (!inHome) {
+            $('msg').className = 'big ok';
+            $('msg').textContent = '✓ 주차 위치 자동 저장';
+            $('sub').textContent = '정확도 약 ' + Math.round(pos.coords.accuracy) + 'm';
+            showLast();
+          } else {
+            $('msg').textContent = '집 근처예요';
+            $('sub').textContent = '층을 선택하세요 (위치는 이미 저장됨)';
+            var box = $('floors'); box.innerHTML = '';
+            floorsList().forEach(function (f) {
+              var b = document.createElement('button');
+              b.textContent = f;
+              b.onclick = function () {
+                b.disabled = true;
+                api({ action: 'floor', id: id, floor: f }).then(function (r2) {
+                  if (!r2 || !r2.ok) throw 0;
+                  $('floorBox').hidden = true;
+                  $('msg').className = 'big ok';
+                  $('msg').textContent = '✓ ' + f + ' 저장 완료';
+                  $('sub').textContent = '';
+                  showLast();
+                }).catch(function () { b.disabled = false; $('sub').textContent = '저장 실패 – 다시 눌러주세요'; });
+              };
+              box.appendChild(b);
+            });
+            $('floorBox').hidden = false;
+          }
+        });
+    }).catch(function (e) {
+      $('msg').textContent = '실패';
+      $('sub').textContent = (e && e.code === 1)
+        ? '위치 권한이 거부됐어요. 주소창 자물쇠 → 권한 → 위치 → 허용'
+        : ((e && e.message) || '위치를 가져오지 못했어요');
+      $('retry').hidden = false;
+    });
+  }
+
+  // ── 설정 화면 ──
+  function openSetup() {
+    $('run').hidden = true;
+    $('setup').hidden = false;
+    $('u').value = S.u || ''; $('t').value = S.t || ''; $('who').value = S.who || '';
+    $('fl').value = S.fl || 'B2,B3,B4'; $('rad').value = S.rad || '150';
+    $('homeInfo').textContent = S.hlat ? '집 위치 설정됨' : '집 위치 미설정 (설정 전에는 항상 자동 저장만 됩니다)';
+  }
+  $('setHome').onclick = function () {
+    $('homeInfo').textContent = '위치 확인 중…';
+    getPos().then(function (p) {
+      S.hlat = p.coords.latitude; S.hlng = p.coords.longitude; save(S);
+      $('homeInfo').textContent = '집 위치 설정됨 ✓';
+    }).catch(function () { $('homeInfo').textContent = '위치를 가져오지 못했어요 (권한 확인)'; });
+  };
+  $('save').onclick = function () {
+    S.u = $('u').value.trim(); S.t = $('t').value.trim(); S.who = $('who').value.trim();
+    S.fl = $('fl').value.trim(); S.rad = $('rad').value.trim();
+    save(S);
+    start();
+  };
+
+  $('toSetup').onclick = openSetup;
+  $('again').onclick = run;
+  $('retry').onclick = run;
+
+  function start() {
+    if (!S.u || !S.t) { openSetup(); return; }
+    showLast();
+    // ?view=1 이면 기록 없이 조회만
+    if (new URLSearchParams(location.search).get('view')) return;
+    run();
+  }
+  start();
+})();
+</script>
+</body>
+</html>
