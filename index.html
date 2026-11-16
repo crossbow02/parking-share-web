@@ -6,6 +6,8 @@
 <title>주차 위치</title>
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#1a73e8">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
 <style>
   :root { --bg:#fff; --fg:#1b1b1f; --mut:#666; --card:#f3f5f9; --pri:#1a73e8; --ok:#188038; }
   @media (prefers-color-scheme: dark) {
@@ -209,6 +211,7 @@
     run();
   }
   start();
+  if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(function () {});
 })();
 </script>
 </body>
