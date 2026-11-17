@@ -2,3 +2,4 @@
 self.addEventListener('install', function () { self.skipWaiting(); });
 self.addEventListener('activate', function (e) { e.waitUntil(self.clients.claim()); });
 self.addEventListener('fetch', function (e) { e.respondWith(fetch(e.request)); });
+// auto-publish test: web/ 변경은 커밋 시 공개 저장소로 자동 게시됨
