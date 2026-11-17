@@ -22,3 +22,4 @@
 #histList { padding-left:18px; margin:6px 0 0; }
 #histList li { margin:8px 0; }
 #histList a { color:var(--fg); text-decoration:none; }
+.floors.small button { font-size:18px; padding:12px 0; }

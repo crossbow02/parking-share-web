@@ -38,11 +38,30 @@
     return (S.fl || 'B2,B3,B4').split(',').map(function (x) { return x.trim(); }).filter(Boolean);
   }
 
-  var VERSION = '2026.11.17-2';
+  var VERSION = '2026.11.17-3';
 
   // 집: "집 B3" / 외부: "야외" (캘린더 제목과 같은 규칙)
   function label(o) {
     return o.mode === 'home' ? '집 ' + (o.floor || '층 미입력') : (o.floor || '야외');
+  }
+
+  // 가장 최근 기록의 층을 바로 입력/수정 (집 주차로 기록됨)
+  function renderLastFloors(l) {
+    var box = $('lastFloors'); box.innerHTML = '';
+    floorsList().forEach(function (f) {
+      var b = document.createElement('button');
+      b.textContent = (l.floor === f ? '✓ ' : '') + f;
+      if (l.floor !== f) b.className = 'sec';
+      b.onclick = function () {
+        b.disabled = true;
+        api({ action: 'floor', id: l.id, floor: f, mode: 'home' }).then(function (r) {
+          if (!r || !r.ok) throw 0;
+          showLast();
+        }).catch(function () { b.disabled = false; alert('저장 실패 – 다시 눌러주세요'); });
+      };
+      box.appendChild(b);
+    });
+    $('lastFloorBox').hidden = false;
   }
 
   function showHistory() {
@@ -68,6 +87,7 @@
       $('lastFloor').textContent = title;
       $('lastInfo').textContent = info;
       $('lastMap').hidden = true;
+      $('lastFloorBox').hidden = true;
     }
     api({ action: 'latest' }).then(function (r) {
       if (!r || !r.ok) {
@@ -83,6 +103,7 @@
       $('lastFloor').textContent = label(l);
       $('lastInfo').textContent = l.time + ' · ' + l.who;
       $('lastMap').href = 'https://maps.google.com/?q=' + l.lat + ',' + l.lng;
+      renderLastFloors(l);
       showHistory();
     }).catch(function () {
       fail('불러오기 실패', '네트워크 또는 웹 앱 URL을 확인하세요.');
@@ -182,6 +203,8 @@
     S.u = $('u').value.trim(); S.t = $('t').value.trim(); S.who = $('who').value.trim();
     S.fl = $('fl').value.trim(); S.rad = $('rad').value.trim();
     save(S);
+    $('setup').hidden = true;
+    alert('저장했어요');
     start();
   };
 

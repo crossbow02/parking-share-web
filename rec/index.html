@@ -8,7 +8,7 @@
 <meta name="theme-color" content="#1a73e8">
 <link rel="icon" href="../icon-192.png">
 <link rel="apple-touch-icon" href="../icon-192.png">
-<link rel="stylesheet" href="../style.css?v=2026.11.17-2">
+<link rel="stylesheet" href="../style.css?v=2026.11.17-3">
 </head>
 <body>
 <h1>🚗 주차 기록 중</h1>
@@ -29,6 +29,10 @@
   <div class="mut">가장 최근 주차</div>
   <div class="big" id="lastFloor"></div>
   <div class="mut" id="lastInfo"></div>
+  <div id="lastFloorBox" hidden>
+    <div class="mut" style="margin-top:10px">층 입력 / 수정</div>
+    <div class="floors small" id="lastFloors"></div>
+  </div>
   <a class="btn sec" id="lastMap" target="_blank" rel="noopener">지도에서 보기</a>
 </div>
 
@@ -55,6 +59,6 @@
 
 <script>window.PARK_AUTO=true;window.PARK_SW='../sw.js';</script>
 <div class="mut" id="ver" style="text-align:center;margin-top:16px"></div>
-<script src="../app.js?v=2026.11.17-2"></script>
+<script src="../app.js?v=2026.11.17-3"></script>
 </body>
 </html>
