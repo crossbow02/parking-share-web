@@ -80,36 +80,53 @@
       var hasHome = S.hlat && S.hlng;
       var inHome = hasHome && dist(lat, lng, +S.hlat, +S.hlng) <= (+S.rad || 150);
 
+      var d = hasHome ? Math.round(dist(lat, lng, +S.hlat, +S.hlng)) : null;
+      var rad = +S.rad || 150;
+
       return api({ action: 'park', id: id, who: S.who || '', lat: lat, lng: lng, mode: inHome ? 'home' : 'auto' })
         .then(function (r) {
           if (!r || !r.ok) throw new Error('서버 저장 실패 (URL/토큰 확인)');
-          if (!inHome) {
-            $('msg').className = 'big ok';
-            $('msg').textContent = '✓ 주차 위치 자동 저장';
-            $('sub').textContent = '정확도 약 ' + Math.round(pos.coords.accuracy) + 'm';
-            showLast();
-          } else {
+
+          // 층 버튼은 항상 만들어 두고, 집 근처면 바로 보여주고 아니면 수동 버튼으로 열기
+          var box = $('floors'); box.innerHTML = '';
+          var old = $('manualFloor'); if (old) old.remove();
+          floorsList().forEach(function (f) {
+            var b = document.createElement('button');
+            b.textContent = f;
+            b.onclick = function () {
+              b.disabled = true;
+              api({ action: 'floor', id: id, floor: f, mode: 'home' }).then(function (r2) {
+                if (!r2 || !r2.ok) throw 0;
+                $('floorBox').hidden = true;
+                $('msg').className = 'big ok';
+                $('msg').textContent = '✓ 집 ' + f + ' 저장 완료';
+                $('sub').textContent = '';
+                showLast();
+              }).catch(function () { b.disabled = false; $('sub').textContent = '저장 실패 – 다시 눌러주세요'; });
+            };
+            box.appendChild(b);
+          });
+          showLast();
+
+          if (inHome) {
             $('msg').textContent = '집 근처예요';
             $('sub').textContent = '층을 선택하세요 (위치는 이미 저장됨)';
-            var box = $('floors'); box.innerHTML = '';
-            floorsList().forEach(function (f) {
-              var b = document.createElement('button');
-              b.textContent = f;
-              b.onclick = function () {
-                b.disabled = true;
-                api({ action: 'floor', id: id, floor: f }).then(function (r2) {
-                  if (!r2 || !r2.ok) throw 0;
-                  $('floorBox').hidden = true;
-                  $('msg').className = 'big ok';
-                  $('msg').textContent = '✓ ' + f + ' 저장 완료';
-                  $('sub').textContent = '';
-                  showLast();
-                }).catch(function () { b.disabled = false; $('sub').textContent = '저장 실패 – 다시 눌러주세요'; });
-              };
-              box.appendChild(b);
-            });
             $('floorBox').hidden = false;
-            showLast(); // 새 기록(층 미입력)으로 '가장 최근 주차' 카드 갱신
+          } else {
+            $('msg').className = 'big ok';
+            $('msg').textContent = '✓ 주차 위치 자동 저장';
+            $('sub').textContent = (hasHome
+              ? '집까지 약 ' + d + 'm (집 반경 ' + rad + 'm 밖)'
+              : '집 위치가 설정되지 않았어요 (⚙ 설정)') + ' · 정확도 약 ' + Math.round(pos.coords.accuracy) + 'm';
+            var m = document.createElement('button');
+            m.id = 'manualFloor'; m.className = 'sec'; m.textContent = '🏠 집에 주차했어요 (층 입력)';
+            m.onclick = function () {
+              m.remove();
+              $('msg').className = 'big';
+              $('msg').textContent = '층을 선택하세요';
+              $('floorBox').hidden = false;
+            };
+            $('run').insertBefore(m, $('retry'));
           }
         });
     }).catch(function (e) {
