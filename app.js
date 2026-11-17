@@ -39,14 +39,29 @@
   }
 
   function showLast() {
-    api({ action: 'latest' }).then(function (r) {
-      var l = r && r.latest;
-      if (!l) { $('last').hidden = true; return; }
+    function fail(title, info) {
       $('last').hidden = false;
+      $('lastFloor').textContent = title;
+      $('lastInfo').textContent = info;
+      $('lastMap').hidden = true;
+    }
+    api({ action: 'latest' }).then(function (r) {
+      if (!r || !r.ok) {
+        fail('불러오기 실패', r && r.error === 'unauthorized'
+          ? '토큰이 서버와 달라요. ⚙ 설정의 토큰과 앱스크립트 속성 TOKEN을 확인하세요.'
+          : '서버 응답 오류: ' + ((r && r.error) || '알 수 없음'));
+        return;
+      }
+      var l = r.latest;
+      if (!l) { fail('기록 없음', '아직 저장된 주차 기록이 없어요.'); return; }
+      $('last').hidden = false;
+      $('lastMap').hidden = false;
       $('lastFloor').textContent = l.floor || '층 미입력';
       $('lastInfo').textContent = l.time + ' · ' + l.who;
       $('lastMap').href = 'https://maps.google.com/?q=' + l.lat + ',' + l.lng;
-    }).catch(function () {});
+    }).catch(function () {
+      fail('불러오기 실패', '네트워크 또는 웹 앱 URL을 확인하세요.');
+    });
   }
 
   // ── 메인 흐름: 위치 → 집 안/밖 판단 → 저장 (집 안이면 층 선택) ──
