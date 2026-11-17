@@ -38,6 +38,30 @@
     return (S.fl || 'B2,B3,B4').split(',').map(function (x) { return x.trim(); }).filter(Boolean);
   }
 
+  var VERSION = '2026.11.17-2';
+
+  // 집: "집 B3" / 외부: "야외" (캘린더 제목과 같은 규칙)
+  function label(o) {
+    return o.mode === 'home' ? '집 ' + (o.floor || '층 미입력') : (o.floor || '야외');
+  }
+
+  function showHistory() {
+    api({ action: 'history', n: 10 }).then(function (r) {
+      if (!r || !r.ok || !r.rows || !r.rows.length) { $('hist').hidden = true; return; }
+      var ul = $('histList'); ul.innerHTML = '';
+      r.rows.forEach(function (o) {
+        var li = document.createElement('li');
+        var link = document.createElement('a');
+        link.href = 'https://maps.google.com/?q=' + o.lat + ',' + o.lng;
+        link.target = '_blank'; link.rel = 'noopener';
+        link.textContent = String(o.time).substr(5, 11) + ' · ' + (o.who || '') + ' · ' + label(o);
+        li.appendChild(link);
+        ul.appendChild(li);
+      });
+      $('hist').hidden = false;
+    }).catch(function () { $('hist').hidden = true; });
+  }
+
   function showLast() {
     function fail(title, info) {
       $('last').hidden = false;
@@ -56,9 +80,10 @@
       if (!l) { fail('기록 없음', '아직 저장된 주차 기록이 없어요.'); return; }
       $('last').hidden = false;
       $('lastMap').hidden = false;
-      $('lastFloor').textContent = l.floor || '층 미입력';
+      $('lastFloor').textContent = label(l);
       $('lastInfo').textContent = l.time + ' · ' + l.who;
       $('lastMap').href = 'https://maps.google.com/?q=' + l.lat + ',' + l.lng;
+      showHistory();
     }).catch(function () {
       fail('불러오기 실패', '네트워크 또는 웹 앱 URL을 확인하세요.');
     });
@@ -165,6 +190,8 @@
     if (window.PARK_AUTO || confirm('지금 위치를 새 주차 위치로 기록할까요?')) run();
   };
   $('retry').onclick = run;
+
+  $('ver').textContent = '버전 ' + VERSION;
 
   function start() {
     if (!S.u || !S.t) { openSetup(); return; }

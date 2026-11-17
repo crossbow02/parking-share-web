@@ -19,3 +19,6 @@
           border:1px solid var(--mut); background:var(--bg); color:var(--fg); }
   label { font-size:14px; color:var(--mut); }
   [hidden] { display:none !important; }
+#histList { padding-left:18px; margin:6px 0 0; }
+#histList li { margin:8px 0; }
+#histList a { color:var(--fg); text-decoration:none; }

@@ -8,7 +8,7 @@
 <meta name="theme-color" content="#1a73e8">
 <link rel="icon" href="../icon-192.png">
 <link rel="apple-touch-icon" href="../icon-192.png">
-<link rel="stylesheet" href="../style.css">
+<link rel="stylesheet" href="../style.css?v=2026.11.17-2">
 </head>
 <body>
 <h1>🚗 주차 기록 중</h1>
@@ -32,6 +32,12 @@
   <a class="btn sec" id="lastMap" target="_blank" rel="noopener">지도에서 보기</a>
 </div>
 
+<!-- 최근 기록 목록 -->
+<div class="card" id="hist" hidden>
+  <div class="mut">최근 기록 (탭하면 지도)</div>
+  <ul id="histList"></ul>
+</div>
+
 <button class="sec" id="again">📍 다시 기록</button>
 <button class="sec" id="toSetup">⚙ 설정</button>
 
@@ -48,6 +54,7 @@
 </div>
 
 <script>window.PARK_AUTO=true;window.PARK_SW='../sw.js';</script>
-<script src="../app.js"></script>
+<div class="mut" id="ver" style="text-align:center;margin-top:16px"></div>
+<script src="../app.js?v=2026.11.17-2"></script>
 </body>
 </html>
