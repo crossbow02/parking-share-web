@@ -1,0 +1,21 @@
+  :root { --bg:#fff; --fg:#1b1b1f; --mut:#666; --card:#f3f5f9; --pri:#1a73e8; --ok:#188038; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#14161a; --fg:#eceef2; --mut:#9aa0aa; --card:#21242b; --pri:#6ea8ff; --ok:#5bd17f; }
+  }
+  * { box-sizing: border-box; }
+  body { margin:0; padding:16px; background:var(--bg); color:var(--fg);
+         font:16px/1.5 -apple-system,"Noto Sans KR",sans-serif; max-width:480px; margin:auto; }
+  h1 { font-size:20px; margin:8px 0 16px; }
+  .card { background:var(--card); border-radius:14px; padding:16px; margin-bottom:14px; }
+  .big { font-size:22px; font-weight:700; }
+  .mut { color:var(--mut); font-size:14px; }
+  .ok { color:var(--ok); font-weight:700; }
+  button, .btn { display:block; width:100%; padding:16px; margin:8px 0; border:0; border-radius:12px;
+         background:var(--pri); color:#fff; font-size:20px; font-weight:700; text-align:center; text-decoration:none; }
+  button.sec, .btn.sec { background:transparent; color:var(--pri); border:1.5px solid var(--pri); font-size:16px; padding:12px; }
+  .floors { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
+  .floors button { font-size:26px; padding:22px 0; margin:0; }
+  input { width:100%; padding:12px; margin:4px 0 10px; font-size:16px; border-radius:10px;
+          border:1px solid var(--mut); background:var(--bg); color:var(--fg); }
+  label { font-size:14px; color:var(--mut); }
+  [hidden] { display:none !important; }

@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>주차 기록</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#1a73e8">
+<link rel="icon" href="../icon-192.png">
+<link rel="apple-touch-icon" href="../icon-192.png">
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<h1>🚗 주차 기록 중</h1>
+
+<!-- 진행 상태 -->
+<div class="card" id="run" hidden>
+  <div id="msg" class="big">위치 확인 중…</div>
+  <div id="sub" class="mut"></div>
+  <div id="floorBox" hidden>
+    <p class="mut">몇 층에 주차했나요?</p>
+    <div class="floors" id="floors"></div>
+  </div>
+  <button class="sec" id="retry" hidden>다시 시도</button>
+</div>
+
+<!-- 최근 기록 -->
+<div class="card" id="last" hidden>
+  <div class="mut">가장 최근 주차</div>
+  <div class="big" id="lastFloor"></div>
+  <div class="mut" id="lastInfo"></div>
+  <a class="btn sec" id="lastMap" target="_blank" rel="noopener">지도에서 보기</a>
+</div>
+
+<button class="sec" id="again">📍 다시 기록</button>
+<button class="sec" id="toSetup">⚙ 설정</button>
+
+<!-- 설정 -->
+<div class="card" id="setup" hidden>
+  <label>Apps Script 웹 앱 URL (…/exec)</label><input id="u" inputmode="url" autocapitalize="off">
+  <label>토큰</label><input id="t" autocapitalize="off">
+  <label>내 이름 (예: 남편)</label><input id="who">
+  <label>층 목록 (쉼표 구분)</label><input id="fl">
+  <label>집 반경(m)</label><input id="rad" inputmode="numeric">
+  <button class="sec" id="setHome">현재 위치를 집으로 설정</button>
+  <div class="mut" id="homeInfo"></div>
+  <button id="save">저장</button>
+</div>
+
+<script>window.PARK_AUTO=true;window.PARK_SW='../sw.js';</script>
+<script src="../app.js"></script>
+</body>
+</html>
